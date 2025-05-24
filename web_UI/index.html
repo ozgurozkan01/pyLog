@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PyLog - Linux Journal Viewer</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <i class="fas fa-terminal logo-icon"></i>
+                <h2>PyLog</h2>
+            </div>
+            <ul>
+                <li class="active" data-target="dashboard"><a href="#"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                <li data-target="events"><a href="#"><i class="fas fa-list-alt"></i> Journal Logs</a></li>
+                <li data-target="alerts"><a href="#"><i class="fas fa-bell"></i> Watchlist Alerts</a></li>
+                <li data-target="investigation"><a href="#"><i class="fas fa-search"></i> Search Logs</a></li>
+                <li data-target="settings"><a href="#"><i class="fas fa-cog"></i> Settings</a></li>
+            </ul>
+            <div class="sidebar-footer">
+                <p>© 2025 PyLog</p>
+            </div>
+        </nav>
+
+        <main class="main-content">
+            <header class="top-bar">
+                <div class="search-bar">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="global-journal-search" placeholder="Search all journal fields...">
+                </div>
+                <div class="user-profile">
+                    <i class="fas fa-user-circle"></i>
+                    <span>Analyst</span>
+                    <i class="fas fa-caret-down"></i>
+                </div>
+            </header>
+
+            <section id="dashboard" class="content-section active-section">
+                <h1>Dashboard</h1>
+                <div class="widgets-grid">
+                    <div class="widget priority-alerts interactive-widget" data-link-target="events" data-filter-priority="err">
+                        <h3><i class="fas fa-exclamation-circle"></i> Recent Errors (priority <= err)</h3>
+                        <p class="widget-value" id="error-log-count">0</p>
+                        <small>In the Last Hour</small>
+                    </div>
+                    <div class="widget log-sources-chart">
+                        <h3><i class="fas fa-cogs"></i> Top Log Identifiers</h3>
+                        <div class="chart-container">
+                            <canvas id="logIdentifiersChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="widget logs-by-priority-chart">
+                        <h3><i class="fas fa-sort-amount-down"></i> Logs by Priority</h3>
+                        <div class="chart-with-legend-container">
+                            <div class="chart-canvas-container">
+                                <canvas id="logsByPriorityChart"></canvas>
+                            </div>
+                            <div class="chart-legend-container" id="logsByPriorityLegend">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="widget system-boots">
+                        <h3><i class="fas fa-power-off"></i> Recent System Boots</h3>
+                        <ul id="boot-list" class="widget-list">
+                            <li>No boot data available.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="dashboard-live-feed-section">
+                    <div class="section-header-with-link">
+                        <h2><i class="fas fa-stream"></i> Recent Journal Entries</h2>
+                        <a href="#" class="view-all-link" data-link-target="events">View All Logs »</a>
+                    </div>
+                    <div class="table-container">
+                        <table class="events-table dashboard-events-table">
+                            <thead>
+                                <tr>
+                                    <th><i class="fas fa-clock"></i> Time</th>
+                                    <th><i class="fas fa-server"></i> Host</th>
+                                    <th><i class="fas fa-tag"></i> Priority</th>
+                                    <th><i class="fas fa-cogs"></i> Identifier/Unit</th>
+                                    <th class="message-col"><i class="fas fa-comment-dots"></i> Message Snippet</th>
+                                    <th><i class="fas fa-eye"></i> Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dashboard-events-table-body">
+                                <!-- JS will populate this -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <section id="events" class="content-section">
+                <h1>Journal Logs</h1>
+                <div class="filter-bar journal-filter-bar">
+                    <input type="text" id="journal-message-filter" placeholder="Filter by Message...">
+                    <select id="journal-priority-filter">
+                        <option value="">All Priorities</option>
+                        <option value="0">0 (emerg)</option>
+                        <option value="1">1 (alert)</option>
+                        <option value="2">2 (crit)</option>
+                        <option value="3">3 (err)</option>
+                        <option value="4">4 (warning)</option>
+                        <option value="5">5 (notice)</option>
+                        <option value="6">6 (info)</option>
+                        <option value="7">7 (debug)</option>
+                    </select>
+                    <input type="text" id="journal-identifier-filter" placeholder="Filter by Identifier/Unit...">
+                    <input type="text" id="journal-hostname-filter" placeholder="Filter by Hostname...">
+                    <button id="journal-apply-filters-btn"><i class="fas fa-filter"></i> Apply Filters</button>
+                </div>
+                <div class="table-container">
+                    <table class="events-table journal-events-table">
+                        <thead>
+                            <tr>
+                                <th><i class="fas fa-clock"></i> Timestamp</th>
+                                <th><i class="fas fa-server"></i> Hostname</th>
+                                <th><i class="fas fa-tag"></i> Priority</th>
+                                <th><i class="fas fa-cogs"></i> Identifier/Unit</th>
+                                <th><i class="fas fa-hashtag"></i> PID</th>
+                                <th class="message-col"><i class="fas fa-comment-dots"></i> Message</th>
+                                <th><i class="fas fa-cog"></i> Transport</th>
+                                <th><i class="fas fa-eye"></i> Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="events-table-body">
+                            <!-- JS will populate this -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pagination">
+                    <button>« Previous</button>
+                    <span>Page 1 / X</span>
+                    <button>Next »</button>
+                </div>
+            </section>
+
+            <section id="alerts" class="content-section">
+                <h1>Watchlist Alerts</h1>
+                <p>Define patterns or critical log messages to watch for. (e.g., "Failed password", "segmentation fault")</p>
+                <div class="filter-bar">
+                    <input type="text" placeholder="Add new watchlist pattern...">
+                    <button><i class="fas fa-plus"></i> Add Pattern</button>
+                </div>
+                <div id="watchlist-alerts-container">
+                    <p>No active watchlist alerts.</p>
+                </div>
+            </section>
+
+            <section id="investigation" class="content-section">
+                <h1>Search Logs</h1>
+                <p>Perform detailed searches across all journal fields using specific criteria.</p>
+                <div class="journal-search-form">
+                    <input type="text" placeholder="Field (e.g., _SYSTEMD_UNIT)" name="field_name_1">
+                    <input type="text" placeholder="Value (e.g., sshd.service)" name="field_value_1">
+                    <button class="add-criteria-btn"><i class="fas fa-plus-circle"></i> Add Criteria</button>
+                    <button class="run-query-btn"><i class="fas fa-search"></i> Search</button>
+                </div>
+                <div class="query-results">
+                    <p>Search results will be displayed here.</p>
+                </div>
+            </section>
+
+            <section id="settings" class="content-section">
+                <h1>Settings</h1>
+                <div class="settings-category">
+                    <h3><i class="fas fa-sliders-h"></i> Journal Tailing Options</h3>
+                    <p>Configure how `journalctl` is tailed (e.g., update frequency).</p>
+                    <div class="setting-option-placeholder">
+                        <p>Journal tailing options (e.g., update frequency, lines to fetch) will be configurable here.</p>
+                    </div>
+                </div>
+                <div class="settings-category">
+                    <h3><i class="fas fa-eye"></i> Watchlist Configuration</h3>
+                    <p>Manage patterns that trigger alerts.</p>
+                     <div class="setting-option-placeholder">
+                        <p>Watchlist pattern management will be available here.</p>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
